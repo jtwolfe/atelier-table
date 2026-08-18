@@ -1,6 +1,10 @@
 # Table — architecture
 
-## Shape
+## Two shapes
+
+**Web v0 (now)** — the browser *is* the app. Camera via `getUserMedia` stills. Projector via a second tab (`/output`) synced with `BroadcastChannel` + `localStorage`. See [WEB.md](WEB.md).
+
+**Daemon v1 (destination)** — the laptop next to the table owns hardware. The browser is a remote. That is the shape below.
 
 ```text
 ┌─────────────────────────────────────────────┐
@@ -18,12 +22,15 @@
      browser on same machine, or a tablet
 ```
 
-The daemon owns hardware. The browser never calls `getUserMedia` for the table camera. If it did, a tablet remote-controlling the laptop would silently use the *tablet* camera and every calibration would be a lie.
+The daemon owns hardware. In v1 the browser never calls `getUserMedia` for the table camera. If it did, a tablet remote-controlling the laptop would silently use the *tablet* camera and every calibration would be a lie.
+
+Web v0 breaks that rule on purpose: there is no daemon yet, and the laptop *is* the table machine.
 
 ## Modes
 
 | Mode | What happens |
 |---|---|
+| Web v0 | Vite / TanStack app. Device camera. Second tab = projector. |
 | `serve --bind 0.0.0.0:8080` | Daemon + UI. Other devices are remotes. |
 | `serve --open` | Same, then open the local browser. The “desktop app.” |
 | Later: Tauri window | Same API, native chrome. Optional. |
@@ -46,34 +53,29 @@ web/             Vite + TypeScript
 
 ### Calibrate (once per board)
 
-1. User prints 3 CalSheets at 100%, optionally measures the 100 mm bar or drops a credit card on one sheet.
-2. Places A / B / C on the empty mat (top-left, centre, bottom-right).
-3. Daemon grabs a frame, detects Charuco islands (unique ID ranges), detects the mat lattice in the gaps.
-4. Joint plane fit → pitch X/Y in true mm, origin, axes, `H_cam ← table`.
-5. Optional projector burst (Charuco or Gray-code onto the white A4s) → `H_proj ← table`.
-6. Verify: project a 100 mm square, measure it, show residual heatmap.
-7. Write `board.json`.
+**v0:** print 3 CalSheets, photograph, click four mat corners + 100 mm bar. Homography + print scale. Optional autocorrelation of the visible lattice. Sheets come off; the lamp draws the grid.
+
+**v1:** daemon frame → detect Charuco islands (unique ID ranges) + mat lattice → joint plane fit → optional Gray-code projector burst → `H_proj`. Refuse a board with centre RMS > 1.5 mm.
 
 ### Digitize
 
-1. Pieces on the mat. Grid visible around them. Optional leftover CalSheet in a corner.
+1. Pieces on the mat. Grid visible around them (projected, or the printed mat).
 2. Warp to table-mm via `H_cam`.
-3. Segment (colour gate + contours in v1).
-4. Vectorize (RDP → cubic fit → close).
-5. Review UI: photo under, vectors over. User names pieces, marks grain, assigns stitch edge ids.
-6. Write `garment.v1`.
+3. Segment (colour gate + contours in v0/v1).
+4. Vectorize (RDP → close).
+5. Review UI: photo under, vectors over. User names pieces, marks grain.
+6. Write `garment.v1`. Optionally emit evaluated `.sm2d`.
 
 ### Project
 
-1. Load IR or SVG/PDF + `board.json`.
-2. Layout (use Seamly nest if present, else a simple NFP later).
-3. Warp through `H_proj`, fullscreen on the projector display.
-4. Tools: invert, grain, notches, piece-by-piece, 1-click border re-verify.
+1. Load IR or SVG + `board.json`.
+2. **v0:** lamp in this tab or `/output`. Four dragged corners for keystone. Board grid from measured pitch.
+3. **v1:** warp through `H_proj`, fullscreen on the projector display. Gray-code re-verify.
 
 ## Why the mat, not four dragged corners
 
 [Pattern Projector](https://www.patternprojector.com) already does 4-corner homography by eye. It is excellent and we will wrap its PDF UX ideas. Our increment is **closed-loop metric**: the mat lattice plus three known-metric islands, residual in mm, digitize and project on the same profile.
 
-## Seamly2D
+## Seamly2D and Draft
 
-We do not link against Seamly2D (GPLv3). We read its SVG/DXF export and, if they accept it, a JSON dump of evaluated pieces. A background-image PR to Seamly is welcome; it is not this repo.
+We do not link against Seamly2D (GPLv3). We read SVG/DXF and write evaluated `.sm2d` (points + pieces, no live increments). Live formulas belong in [Atelier Draft](https://github.com/jtwolfe/atelier-draft).

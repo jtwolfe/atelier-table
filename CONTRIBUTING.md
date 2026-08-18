@@ -1,20 +1,21 @@
 # Contributing
 
-These three repos are siblings. Keep the contracts intact.
+These four repos are siblings. Keep the contracts intact.
 
 | Repo | May write | May not grow |
 |---|---|---|
-| [atelier-table](https://github.com/jtwolfe/atelier-table) | `garment.v1`, `board.v1` | A solver, a pose estimator |
+| [atelier-table](https://github.com/jtwolfe/atelier-table) | `garment.v1`, `board.v1` | A solver, a pose estimator, a formula CAD |
 | [atelier-studio](https://github.com/jtwolfe/atelier-studio) | `bake.v1` / GLB | A CalSheet detector, `getUserMedia` |
 | [atelier-looking-glass](https://github.com/jtwolfe/atelier-looking-glass) | Stills / clips | A cloth solver, IR authoring |
+| [atelier-draft](https://github.com/jtwolfe/atelier-draft) | `draft.v1`, evaluated `garment.v1` | A projector, a drape solver, a try-on booth |
 
-`spec/garment.v1.md` is copied in all three. Change it everywhere in the same change, or extract `atelier-ir` first.
+`spec/garment.v1.md` is copied in Table / Studio / Looking Glass. Change it everywhere in the same change, or extract `atelier-ir` first.
 
 ## Stack
 
-Rust for the domain. TypeScript + Vite for the UI. One Axum binary that either binds `0.0.0.0` (remote UI) or `--open`s the local browser. See `docs/STACK.md`.
+Rust for the long-run domain and hardware daemon. TypeScript + Vite for the UI (and for web v0, the whole loop). One Axum binary later that either binds `0.0.0.0` (remote UI) or `--open`s the local browser. See `docs/STACK.md` and `docs/WEB.md`.
 
-Exceptions: MediaPipe stays WASM in Looking Glass. Blender may be an optional Studio subprocess.
+Exceptions: MediaPipe stays WASM in Looking Glass. Blender may be an optional Studio subprocess. Web v0 Table may call `getUserMedia` because there is no daemon yet.
 
 ## Language
 
